@@ -1,0 +1,196 @@
+---
+title: "Title of Your Report"
+author: "Qiuyun Han, Wing Yi Ma, Tong Wu, Minhui Yu"
+date: "November 2nd 2020"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(knitr)
+library(ggpubr)
+# Loading in the cleaned survey Data
+survey_data <- read_csv("survey_data.csv")
+
+# Loading in the cleaned census Data
+census_data <- read_csv("census_data.csv")
+
+```
+
+# Title of your Report
+
+## Name(s) of Author(s) 
+Qiuyun Han, Wing Yi Ma, Tong Wu, Minhui Yu
+
+## Date
+November 2nd 2020
+
+# Model
+
+The objective of this model is to predict the result of the 2020 American federal election. We achieve this by constructing a logistic regression model using 20200625 survey data, then we use post stratification technique on census data to extrapolate the population estimate. 
+
+## Model Specifics
+We implement a logistic regression model on the proportion of voters who will vote for Donald Trump using RStudio. There are five predictors in the model: age group, race, household income, state and education. Since the response variable is binary, it is appropriate to adapt a logistic regression model. We include the predictor education because the rate of registered voters holding a college degree has substantially increased from 24% in 1996 to 36% this year (Gramlich, 2020). And highly educated people are more likely to hold liberal views (Suls, 2016). This may affect the result, so we need to take it into account. We did not choose gender as a predictor because the gender variation in the US federal election is less significant than the variation in race and ethnic. In addition, we divide age into five age groups because the range of age is large. By grouping age, it’s easier for us to visualize the relationship amongst age groups. The estimated formula for this model is: $y=1.9249+\beta_1x_1+...+\beta_5x_5+...+\beta_{14}x_{14}+...+...+\beta_{64}x_{14}+...+\beta_{91}x_{91}$ where $y$ represents the proportion of registered voters who will vote for Donald Trump, $x_1$ to $x_4$ represent age groups, $x_5$ to $x_{13}$ represent voters' educational attainment, $x_{14}$ to $x_{63}$ represent different states in the US, $x_{64}$ to $x_{86}$ represent voters' household income, and $x_{87}$ to $x_{91}$ represent voters' ethnicity. In addition, $\beta_0 = 1.9249$ represents the log odds of voting for Donald Trump when the voter belongs to the age group 20 to 40, 8th grade or less, Alaska state, household income between 100,000 to 124,999 US dollars and native American. Take the estimated coefficient of black voters as an example, if a registered voter is of black ethnicity, we expect his log odds of voting for Trump decrease by 2.394 compared to Native American. Similarly, for voters in the age group above 80, we would expect their log odds of voting for Trump increase by 0.335 compared to voters in the age group 20 to 40. The logistic model is practical because the data are extracted from national survey and census, which are real life data. The five predictors we selected provide us with sufficient information on voters’ demographics, building a logistic regression model on these predictors would give a relatively valid result.
+
+
+```{r, include=FALSE}
+
+# Creating the Model
+model <- glm(vote_trump ~ age_group+race+household_income+state+education , 
+            data=survey_data, family= "binomial")
+
+# Print the result
+broom::tidy(model)
+```
+
+## Post-Stratification 
+
+  Post-Stratification is one of the stratification method in which a sample is first taken from a population using simple random sampling. Then the cells in the sample are stratified according to some characteristics. It can be applied when the population information is incomplete. And in general, its estimation efficiency is better than simple random sampling. 
+  Since we want to predict the percentage of voter who would vote for Trump, we start the post-stratification. Our choice of cells are based on different age group, household income, education, state, and race. We create 112724 cells because we have 112724 rows in our census_data.csv. We choose such cells because our model above contained all of the explanatory variable in cells. And from the plots bar plot for explanatory variable and vote result(for Donald Trump or for Joe Biden) in results part, we can observe obviously that percentage of voter who would vote for Donald Trump in different variable we chose has significant difference. For example, most voter in CA voted for Joe Biden, however, most voter in TX voted for Donald Trump. The process of post-stratification is first calculate the estimate of each cell. Since our model is a logistic model, we can not get estimate directly, for instance, we get ${a_i}$ = ${log(estimate_i)}$. Then use $estimate_i = e^{a_i}/(1+e^{a_i})$ get the real estimate. Now we can multiply ${n_i}$ (the size of this cell) by estimate, and do this for all cells and add these solution to our census_data.csv as a new column. In order to estimate the proportion of voters in cells, we will sum the value of $estimate_i*n_i$ and divide this sum by the entire population size. 
+
+```{r, include=FALSE}
+
+# Here I will perform the post-stratification calculation
+census_data$logodds_estimate <-
+  model %>%
+  predict(newdata = census_data,type="response")
+
+census_data$estimate <-
+  exp(census_data$logodds_estimate)/(1+exp(census_data$logodds_estimate))
+
+census_data %>%
+  mutate(alp_predict_prop = estimate*n) %>%
+  summarise(alp_predict = sum(alp_predict_prop)/sum(n))
+
+census_data%>%mutate(state_prop = estimate*n) %>% group_by(state) %>%
+  summarise(state_predict = sum(state_prop)/sum(n))
+```
+
+
+
+
+
+# Results
+* Here is the post-stratification estimate:
+$$ \hat{y}^{ps} = 0.6161 $$
+We estimate that the percentage of voter who would vote for Trump ( $\hat{y}^{ps}$) to be 0.6161. This result is from our post-stratification analysis of the percentage of voter who would vote for Trump modeled by a logistic model, which accounted for age group, state, race, household income and education.
+
+* Here is the table of our model outcomes:
+
+```{r,echo=FALSE}
+kable(summary(model)$coefficients, caption = "Table 1 - Summary of Logistic Model", digits = 5)
+```
+
+```{r, echo=FALSE}
+
+bar_1 <- ggplot(data = survey_data, aes(x =survey_data$race, fill = survey_data$vote_2020)) +
+  geom_bar() + ## Create a bar chart.
+  theme(text = element_text(size = 6)) + ## Adjust the size of labels.
+  labs(x = "Race",
+       y = "Number",
+       fill = "Voter's Choice",
+       title = "Bar Plot for Voter's Choice and Race") ## Add labels for x axis and y axis, and add title.
+
+bar_2 <- ggplot(data = survey_data, aes(x = survey_data$age_group, fill = survey_data$vote_2020)) +
+  geom_bar() + ## Create a bar chart.
+  theme(text = element_text(size = 6)) + ## Adjust the size of labels.
+  labs(x = "Age Group",
+       y = "Number",
+       fill = "Voter's Choice",
+       title = "Bar Plot for Voter's Choice and Age Group") ## Add labels for x axis and y axis, and add title.
+
+bar_3 <- ggplot(data = survey_data, aes(x = survey_data$state, fill = survey_data$vote_2020)) +
+  geom_bar() + ## Create a bar chart.
+  theme(text = element_text(size = 6)) + ## Adjust the size of labels.
+  labs(x = "State",
+       y = "Number",
+       fill = "Voter's Choice",
+       title = "Bar Plot for Voter's Choice and State") ## Add labels for x axis and y axis, and add title.
+
+bar_4 <- ggplot(data = survey_data, aes(x = survey_data$household_income, fill = survey_data$vote_2020)) +
+  geom_bar() + ## Create a bar chart.
+  theme(text = element_text(size = 6)) + ## Adjust the size of labels.
+  labs(x = "Household Income",
+       y = "Number",
+       fill = "Voter's Choice",
+       title = "Bar Plot for Voter's Choice and Household") ## Add labels for x axis and y axis, and add title.
+
+bar_5 <- ggplot(data = survey_data, aes(x = survey_data$education, fill = survey_data$vote_2020)) +
+  geom_bar() + ## Create a bar chart.
+  theme(text = element_text(size = 6)) + ## Adjust the size of labels.
+  labs(x = "Education",
+       y = "Number",
+       fill = "Voter's Choice",
+       title = "Bar Plot for Voter's Choice and Education") ## Add labels for x axis and y axis, and add title.
+
+ggarrange(bar_1, bar_2, bar_3, bar_4, bar_5, ncol = 2, nrow = 3)
+
+```
+
+* There are two new column in census_data.csv now, and here are the example of the new csv:
+
+```{r, echo = FALSE}
+kable(head(census_data))
+```
+
+* Here is the boxplot for estimate and Race:
+
+```{r, echo = FALSE}
+census_data$ID <-
+  seq(from = 1, to = 112724)
+
+boxplot_6 <- ggplot(census_data, aes(x='', y=census_data$estimate)) +
+  geom_boxplot(aes(fill=census_data$race)) +
+  labs(x = "",
+       y = "estimate",
+       fill = "Race",
+       title = "Boxplot for estimate and Race") ## Add labels for x axis and y axis, and add title.
+boxplot_6
+```
+From the boxplot we obtain that the mean percentage that the race of voter is black vote Donald Trump is the lowest, and the mean percentage that the race of voter is American native vote Donald Trump is the highest. And there are some outliers in the boxplot. The percentage that the race of voter is black vote Donald Trump are more concentrate. All the estimate is bigger than 0.50.
+
+
+# Discussion
+
+## Summary
+
+We used two datasets in this report for our prediction. The first dataset is the 20200625 survey dataset. We obtained it from the Democracy Fund + UCLA Nationscape Principal and it was collected through a survey on the 2020 election performed on almost 500,000 Americans through July 2019 to December 2020. The portion of this dataset that is used in this report is only up to the data collected on June 25th 2020. One possible bias that exists in this dataset would be a participation bias, where the participants (sample) cannot represent the entire population as they are invited to complete the survey and the survey is performed online. Accessibility difficulties and participants’ will to complete the survey might limit the variability of the sample. The second dataset is the 2018 census data obtained from IPUMS USA. It was collected through the American Community Surveys (ACS) in 2018. The bias that may exist in the census dataset would be a sampling bias. Since the respondents were sampled from their household/group, some household members that could also be suitable to represent the population might be excluded considering the diversity in the American population. For our prediction, we first constructed a logistic regression model on the 20200625 survey data, then we performed some poststratification calculations on the model with the addition of the census dataset to predict the result of the 2020 American federal election. According to the summary of our logistic regression model and the distributions of each predictive variable versus the estimate (the percentage of voters voting for Trump) in the result section, we noticed that relationships between different predictor variables and the estimate do exist. With the existence of those relationships and the unbalanced proportions of each characteristic of voters in the entire voter population, we obtained a final estimate of the percentage of voters who would vote for Trump from the post-stratification calculation of 0.6161. 
+
+## Conclusion
+
+For each of the predictive variables we used in our prediction, trends in each characteristic of voters can be clearly seen. More voters in the group of age above 40 tend to vote for Trump compared to the one below 30 of age; Voters considered as American Native tend to have the highest chance voting for Trump while voters considered as the Black ethnicity have the lowest;  The richer portion of the voters with higher household income have higher chances voting for Trump than those with lower household income; StateND has the highest chance of voting for Trump while StateVT has the lowest chance; Last but not least, more people with lower education attainment vote for Trump compared to those with higher education attainments. After the post-stratification method is applied, we can see a clearer relationship between race and the estimate, and the result of our prediction from the boxplot of Race versus the estimate. Voters who are considered American Native and White tend to have a much higher chance voting for Trump than those who are considered Black and most of the voters have over 50% of chance of voting for Trump. Therefore, following from the above and with the estimated proportion of voters in favour of voting for Donald Trump being 0.6161, we predict that Donald Trump will win the election. 
+
+## Weaknesses
+
+Our analysis may contain some limitations due to unavoidable causes. Firstly, our survey data(the National Scape dataset) has a relatively small size compared to the census data, many cases occurred in the census dataset would not have a corresponding representation in the survey dataset, this caused some troubles when we were building the cells. Another drawback is our cells did not have very detailed levels, for example, the census data originally contained 44 levels, we have combined them into only 8 levels, this would decrease the accuracy of our prediction in the post-stratification. Finally, we used survey data collected in June 2020 and census data collected in 2018, the real time data could be more representative and accurate because of the time effectiveness of these data.
+ 
+
+## Next Steps
+
+For our next steps, we may look into the result of the actual election and compare with our prediction. If the result was completely different and biased with our prediction, we would do a post hoc analysis , and gather more required data to find the weakness that appears in our model. If the actual result was as expected as our prediction, we may also make a survey to generate the real time based demographic information on respondents, and find out what was insufficient of our data. Also we could analyze what we should improve on the next prediction model.
+
+
+# References
+Alboukadel Kassambara (2020). ggpubr: 'ggplot2' Based Publication Ready Plots. R package version 0.4.0.
+  https://CRAN.R-project.org/package=ggpubr
+  
+David Robinson, Alex Hayes and Simon Couch (2020). broom: Convert Statistical Objects into Tidy Tibbles. R package version
+  0.7.0. https://CRAN.R-project.org/package=broom
+
+Gramlich, John. “What the 2020 Electorate Looks like by Party, Race and Ethnicity, Age, Education and Religion.” Pew Research Center, Pew Research Center, 28 Oct. 2020, www.pewresearch.org/fact-tank/2020/10/26/what-the-2020-electorate-looks-like-by-party-race-and-ethnicity-age-education-and-religion/. 
+
+Steven Ruggles, Sarah Flood, Ronald Goeken, Josiah Grover, Erin Meyer, Jose Pacas and Matthew Sobek. IPUMS USA: Version 10.0 [dataset]. Minneapolis, MN: IPUMS, 2020. https://doi.org/10.18128/D010.V10.0
+
+Suls, Rob. “Educational Divide in Vote Preferences on Track to Be Wider than in Recent Elections.” Pew Research Center, Pew Research Center, 28 Aug. 2020, www.pewresearch.org/fact-tank/2016/09/15/educational-divide-in-vote-preferences-on-track-to-be-wider-than-in-recent-elections/. 
+
+Tausanovitch, Chris and Lynn Vavreck. 2020. Democracy Fund + UCLA Nationscape, October 10-17, 2019 (version 20200814). Retrieved from [https://www.voterstudygroup.org/downloads?key=3ecfdcf3-5484-4129-bb3f-e5536ce2c04b].
+
+Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686,  https://doi.org/10.21105/joss.01686
+
+Yihui Xie (2020). knitr: A General-Purpose Package for Dynamic Report Generation in R. R package version 1.29.
+
+
+
