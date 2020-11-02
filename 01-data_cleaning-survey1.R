@@ -1,8 +1,8 @@
 #### Preamble ####
-# Purpose: Prepare and clean the survey data downloaded from [...UPDATE ME!!!!!]
-# Author: Rohan Alexander and Sam Caetano [CHANGE THIS TO YOUR NAME!!!!]
+# Purpose: Prepare and clean the survey data downloaded from UCLA Nationscape Data Set.
+# Author: Qiuyun Han, Wing Yi Ma, Tong Wu, Minhui Yu
 # Data: 22 October 2020
-# Contact: rohan.alexander@utoronto.ca [PROBABLY CHANGE THIS ALSO!!!!]
+# Contact: qiuyun.han@mail.utoronto.ca, yuminhui@mail.utoronto.ca, mawymaggie.ma@mail.utoronto.ca, tongtobey.wu@mail.utoronto.ca
 # License: MIT
 # Pre-requisites: 
 # - Need to have downloaded the data from X and save the folder that you're 
@@ -13,7 +13,7 @@
 #### Workspace setup ####
 library(haven)
 library(tidyverse)
-setwd("/Users/tongwu/Desktop/STA304/PS3")
+setwd("/Users/lillianhan/Documents/STA/STA304/PS3/ns20200625")
 # Read in the raw data (You might need to change this if you use a different dataset)
 raw_survey <- read_dta("ns20200625.dta")
 # Add the labels
