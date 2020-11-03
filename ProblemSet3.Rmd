@@ -1,14 +1,14 @@
 ---
-title: "Title of Your Report"
+title: "Prediction of the 2020 American Federal Election Using Logistic Regression with Post-Stratification"
 author: "Qiuyun Han, Wing Yi Ma, Tong Wu, Minhui Yu"
 date: "November 2nd 2020"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=F}
 library(tidyverse)
 library(knitr)
 library(ggpubr)
@@ -21,6 +21,7 @@ census_data <- read_csv("census_data.csv")
 ```
 
 # Title of your Report
+Prediction of the 2020 American Federal Election Using Logistic Regression with Post-Stratification
 
 ## Name(s) of Author(s) 
 Qiuyun Han, Wing Yi Ma, Tong Wu, Minhui Yu
@@ -28,9 +29,13 @@ Qiuyun Han, Wing Yi Ma, Tong Wu, Minhui Yu
 ## Date
 November 2nd 2020
 
+## GitHub Repo
+Code and data supporting this analysis is available at: https://github.com/mawymaggie/STA304PS3
+
+
 # Model
 
-The objective of this model is to predict the result of the 2020 American federal election. We achieve this by constructing a logistic regression model using 20200625 survey data, then we use post stratification technique on census data to extrapolate the population estimate. 
+The objective of this model is to predict the result of the 2020 American federal election, which will be held on November 3rd, 2020. Making prediction with the uncertainty surrounding COVID-19 is challenging (Vittert, Liberty, et al, 2020). We forecast the election result by constructing a logistic regression model using 20200625 survey data, then we use post stratification technique on 2018 ACS census data extracted from IPUMS USA to extrapolate the population estimate. 
 
 ## Model Specifics
 We implement a logistic regression model on the proportion of voters who will vote for Donald Trump using RStudio. There are five predictors in the model: age group, race, household income, state and education. Since the response variable is binary, it is appropriate to adapt a logistic regression model. We include the predictor education because the rate of registered voters holding a college degree has substantially increased from 24% in 1996 to 36% this year (Gramlich, 2020). And highly educated people are more likely to hold liberal views (Suls, 2016). This may affect the result, so we need to take it into account. We did not choose gender as a predictor because the gender variation in the US federal election is less significant than the variation in race and ethnic. In addition, we divide age into five age groups because the range of age is large. By grouping age, it’s easier for us to visualize the relationship amongst age groups. The estimated formula for this model is: $y=1.9249+\beta_1x_1+...+\beta_5x_5+...+\beta_{14}x_{14}+...+...+\beta_{64}x_{14}+...+\beta_{91}x_{91}$ where $y$ represents the proportion of registered voters who will vote for Donald Trump, $x_1$ to $x_4$ represent age groups, $x_5$ to $x_{13}$ represent voters' educational attainment, $x_{14}$ to $x_{63}$ represent different states in the US, $x_{64}$ to $x_{86}$ represent voters' household income, and $x_{87}$ to $x_{91}$ represent voters' ethnicity. In addition, $\beta_0 = 1.9249$ represents the log odds of voting for Donald Trump when the voter belongs to the age group 20 to 40, 8th grade or less, Alaska state, household income between 100,000 to 124,999 US dollars and native American. Take the estimated coefficient of black voters as an example, if a registered voter is of black ethnicity, we expect his log odds of voting for Trump decrease by 2.394 compared to Native American. Similarly, for voters in the age group above 80, we would expect their log odds of voting for Trump increase by 0.335 compared to voters in the age group 20 to 40. The logistic model is practical because the data are extracted from national survey and census, which are real life data. The five predictors we selected provide us with sufficient information on voters’ demographics, building a logistic regression model on these predictors would give a relatively valid result.
@@ -78,62 +83,16 @@ census_data%>%mutate(state_prop = estimate*n) %>% group_by(state) %>%
 $$ \hat{y}^{ps} = 0.6161 $$
 We estimate that the percentage of voter who would vote for Trump ( $\hat{y}^{ps}$) to be 0.6161. This result is from our post-stratification analysis of the percentage of voter who would vote for Trump modeled by a logistic model, which accounted for age group, state, race, household income and education.
 
-* Here is the table of our model outcomes:
-
-```{r,echo=FALSE}
-kable(summary(model)$coefficients, caption = "Table 1 - Summary of Logistic Model", digits = 5)
-```
-
-```{r, echo=FALSE}
-
-bar_1 <- ggplot(data = survey_data, aes(x =survey_data$race, fill = survey_data$vote_2020)) +
-  geom_bar() + ## Create a bar chart.
-  theme(text = element_text(size = 6)) + ## Adjust the size of labels.
-  labs(x = "Race",
-       y = "Number",
-       fill = "Voter's Choice",
-       title = "Bar Plot for Voter's Choice and Race") ## Add labels for x axis and y axis, and add title.
-
-bar_2 <- ggplot(data = survey_data, aes(x = survey_data$age_group, fill = survey_data$vote_2020)) +
-  geom_bar() + ## Create a bar chart.
-  theme(text = element_text(size = 6)) + ## Adjust the size of labels.
-  labs(x = "Age Group",
-       y = "Number",
-       fill = "Voter's Choice",
-       title = "Bar Plot for Voter's Choice and Age Group") ## Add labels for x axis and y axis, and add title.
-
-bar_3 <- ggplot(data = survey_data, aes(x = survey_data$state, fill = survey_data$vote_2020)) +
-  geom_bar() + ## Create a bar chart.
-  theme(text = element_text(size = 6)) + ## Adjust the size of labels.
-  labs(x = "State",
-       y = "Number",
-       fill = "Voter's Choice",
-       title = "Bar Plot for Voter's Choice and State") ## Add labels for x axis and y axis, and add title.
-
-bar_4 <- ggplot(data = survey_data, aes(x = survey_data$household_income, fill = survey_data$vote_2020)) +
-  geom_bar() + ## Create a bar chart.
-  theme(text = element_text(size = 6)) + ## Adjust the size of labels.
-  labs(x = "Household Income",
-       y = "Number",
-       fill = "Voter's Choice",
-       title = "Bar Plot for Voter's Choice and Household") ## Add labels for x axis and y axis, and add title.
-
-bar_5 <- ggplot(data = survey_data, aes(x = survey_data$education, fill = survey_data$vote_2020)) +
-  geom_bar() + ## Create a bar chart.
-  theme(text = element_text(size = 6)) + ## Adjust the size of labels.
-  labs(x = "Education",
-       y = "Number",
-       fill = "Voter's Choice",
-       title = "Bar Plot for Voter's Choice and Education") ## Add labels for x axis and y axis, and add title.
-
-ggarrange(bar_1, bar_2, bar_3, bar_4, bar_5, ncol = 2, nrow = 3)
-
-```
-
 * There are two new column in census_data.csv now, and here are the example of the new csv:
 
 ```{r, echo = FALSE}
-kable(head(census_data))
+kable(head(census_data), caption = "Table 1 - Example of the new census csv", digits = 5)
+```
+
+* Here is the table of our model outcomes:
+
+```{r,echo=FALSE}
+kable(summary(model)$coefficients, caption = "Table 2 - Summary of Vote Trump Logistic Model", digits = 5)
 ```
 
 * Here is the boxplot for estimate and Race:
@@ -142,15 +101,62 @@ kable(head(census_data))
 census_data$ID <-
   seq(from = 1, to = 112724)
 
-boxplot_6 <- ggplot(census_data, aes(x='', y=census_data$estimate)) +
+boxplot_1 <- ggplot(census_data, aes(x='', y=census_data$estimate)) +
   geom_boxplot(aes(fill=census_data$race)) +
   labs(x = "",
        y = "estimate",
        fill = "Race",
-       title = "Boxplot for estimate and Race") ## Add labels for x axis and y axis, and add title.
-boxplot_6
+       title = "Figure 1 - Boxplot for estimate and Race") ## Add labels for x axis and y axis, and add title.
+boxplot_1
 ```
-From the boxplot we obtain that the mean percentage that the race of voter is black vote Donald Trump is the lowest, and the mean percentage that the race of voter is American native vote Donald Trump is the highest. And there are some outliers in the boxplot. The percentage that the race of voter is black vote Donald Trump are more concentrate. All the estimate is bigger than 0.50.
+
+* Here are boxplots for Voter's Choice and different explanatory variables in survey data.
+
+```{r, echo=FALSE}
+
+bar_2 <- ggplot(data = survey_data, aes(x =survey_data$race, fill = survey_data$vote_2020)) +
+  geom_bar() + ## Create a bar chart.
+  theme(text = element_text(size = 6)) + ## Adjust the size of labels.
+  labs(x = "Race",
+       y = "Number",
+       fill = "Voter's Choice",
+       title = "Figure 2 - Bar Plot for Voter's Choice and Race") ## Add labels for x axis and y axis, and add title.
+
+bar_3 <- ggplot(data = survey_data, aes(x = survey_data$age_group, fill = survey_data$vote_2020)) +
+  geom_bar() + ## Create a bar chart.
+  theme(text = element_text(size = 6)) + ## Adjust the size of labels.
+  labs(x = "Age Group",
+       y = "Number",
+       fill = "Voter's Choice",
+       title = "Figure 3 - Bar Plot for Voter's Choice and Age Group") ## Add labels for x axis and y axis, and add title.
+
+bar_4 <- ggplot(data = survey_data, aes(x = survey_data$state, fill = survey_data$vote_2020)) +
+  geom_bar() + ## Create a bar chart.
+  theme(text = element_text(size = 6)) + ## Adjust the size of labels.
+  labs(x = "State",
+       y = "Number",
+       fill = "Voter's Choice",
+       title = "Figure 4 - Bar Plot for Voter's Choice and State") ## Add labels for x axis and y axis, and add title.
+
+bar_5 <- ggplot(data = survey_data, aes(x = survey_data$household_income, fill = survey_data$vote_2020)) +
+  geom_bar() + ## Create a bar chart.
+  theme(text = element_text(size = 6)) + ## Adjust the size of labels.
+  labs(x = "Household Income",
+       y = "Number",
+       fill = "Voter's Choice",
+       title = "Figure 5 - Bar Plot for Voter's Choice and Household") ## Add labels for x axis and y axis, and add title.
+
+bar_6 <- ggplot(data = survey_data, aes(x = survey_data$education, fill = survey_data$vote_2020)) +
+  geom_bar() + ## Create a bar chart.
+  theme(text = element_text(size = 6)) + ## Adjust the size of labels.
+  labs(x = "Education",
+       y = "Number",
+       fill = "Voter's Choice",
+       title = "Figure 6 - Bar Plot for Voter's Choice and Education") ## Add labels for x axis and y axis, and add title.
+
+ggarrange(bar_2, bar_3, bar_4, bar_5, bar_6, ncol = 2, nrow = 3)
+
+```
 
 
 # Discussion
@@ -165,7 +171,7 @@ For each of the predictive variables we used in our prediction, trends in each c
 
 ## Weaknesses
 
-Our analysis may contain some limitations due to unavoidable causes. Firstly, our survey data(the National Scape dataset) has a relatively small size compared to the census data, many cases occurred in the census dataset would not have a corresponding representation in the survey dataset, this caused some troubles when we were building the cells. Another drawback is our cells did not have very detailed levels, for example, the census data originally contained 44 levels, we have combined them into only 8 levels, this would decrease the accuracy of our prediction in the post-stratification. Finally, we used survey data collected in June 2020 and census data collected in 2018, the real time data could be more representative and accurate because of the time effectiveness of these data.
+Our analysis may contain some limitations due to unavoidable causes. Firstly, our survey data(the National Scape dataset) has a relatively small size compared to the census data, many cases occurred in the census dataset would not have a corresponding representation in the survey dataset, this caused some troubles when we were building the cells. Another drawback is our cells did not have very detailed levels, for example, the census data, "education" originally contained 44 levels, we have combined them into only 8 levels, this would decrease the accuracy of our prediction in the post-stratification. Also, we used survey data collected in June 2020 and census data collected in 2018, the real time data could be more representative and accurate because of the time effectiveness of these data. Finally, some outliers existed in the dataset, we probably should remove them before apply our logistic model and this will let our prediction closer to the true result.
  
 
 ## Next Steps
@@ -174,23 +180,42 @@ For our next steps, we may look into the result of the actual election and compa
 
 
 # References
+
+### 1. Datasets
+
+Steven Ruggles, Sarah Flood, Ronald Goeken, Josiah Grover, Erin Meyer, Jose Pacas and Matthew Sobek. IPUMS USA: Version 10.0 [dataset]. Minneapolis, MN: IPUMS, 2020. https://doi.org/10.18128/D010.V10.0
+
+Tausanovitch, Chris and Lynn Vavreck. 2020. Democracy Fund + UCLA Nationscape, October 10-17, 2019 (version 20200814). Retrieved from [https://www.voterstudygroup.org/downloads?key=3ecfdcf3-5484-4129-bb3f-e5536ce2c04b].
+
+### 2. Software
+
+RStudio Team (2020). RStudio: Integrated Development for R. RStudio, PBC,
+  Boston, MA URL http://www.rstudio.com/.
+  
+### 3. Packages
+
 Alboukadel Kassambara (2020). ggpubr: 'ggplot2' Based Publication Ready Plots. R package version 0.4.0.
   https://CRAN.R-project.org/package=ggpubr
   
 David Robinson, Alex Hayes and Simon Couch (2020). broom: Convert Statistical Objects into Tidy Tibbles. R package version
   0.7.0. https://CRAN.R-project.org/package=broom
 
-Gramlich, John. “What the 2020 Electorate Looks like by Party, Race and Ethnicity, Age, Education and Religion.” Pew Research Center, Pew Research Center, 28 Oct. 2020, www.pewresearch.org/fact-tank/2020/10/26/what-the-2020-electorate-looks-like-by-party-race-and-ethnicity-age-education-and-religion/. 
-
-Steven Ruggles, Sarah Flood, Ronald Goeken, Josiah Grover, Erin Meyer, Jose Pacas and Matthew Sobek. IPUMS USA: Version 10.0 [dataset]. Minneapolis, MN: IPUMS, 2020. https://doi.org/10.18128/D010.V10.0
-
-Suls, Rob. “Educational Divide in Vote Preferences on Track to Be Wider than in Recent Elections.” Pew Research Center, Pew Research Center, 28 Aug. 2020, www.pewresearch.org/fact-tank/2016/09/15/educational-divide-in-vote-preferences-on-track-to-be-wider-than-in-recent-elections/. 
-
-Tausanovitch, Chris and Lynn Vavreck. 2020. Democracy Fund + UCLA Nationscape, October 10-17, 2019 (version 20200814). Retrieved from [https://www.voterstudygroup.org/downloads?key=3ecfdcf3-5484-4129-bb3f-e5536ce2c04b].
-
 Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686,  https://doi.org/10.21105/joss.01686
 
 Yihui Xie (2020). knitr: A General-Purpose Package for Dynamic Report Generation in R. R package version 1.29.
+
+
+### 4. Websites
+
+Gramlich, John. “What the 2020 Electorate Looks like by Party, Race and Ethnicity, Age, Education and Religion.” Pew Research Center, Pew Research Center, 28 Oct. 2020, www.pewresearch.org/fact-tank/2020/10/26/what-the-2020-electorate-looks-like-by-party-race-and-ethnicity-age-education-and-religion/. 
+
+
+Suls, Rob. “Educational Divide in Vote Preferences on Track to Be Wider than in Recent  Elections.” Pew Research Center, Pew Research Center, 28 Aug. 2020, www.pewresearch.org/fact-tank/2016/09/15/educational-divide-in-vote-preferences-on-track-to-be-wider-than-in-recent-elections/. 
+
+
+Vittert, Liberty, et al. “Predicting the 2020 Presidential Election · Harvard Data Science Review.” Harvard Data Science Review, PubPub, 27 Oct. 2020, hdsr.mitpress.mit.edu/pub/yi347huq/release/5. 
+
+
 
 
 
