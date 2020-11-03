@@ -7,13 +7,13 @@
 # Pre-requisites: 
 # - Need to have downloaded the ACS data and saved it to inputs/data
 # - Don't forget to gitignore it!
-
+# GitHub Repo Link: https://github.com/mawymaggie/STA304PS3
 
 #### Workspace setup ####
 library(haven)
 library(tidyverse)
 # Read in the raw data.
-setwd("/Users/lillianhan/Documents/STA/STA304/PS3")
+setwd("/Users/tongwu/Desktop/STA304/PS3")
 raw_census <- read_dta("usa_00002.dta")
 
 

@@ -8,12 +8,12 @@
 # - Need to have downloaded the data from X and save the folder that you're 
 # interested in to inputs/data 
 # - Don't forget to gitignore it!
-
+# GitHub Repo Link: https://github.com/mawymaggie/STA304PS3
 
 #### Workspace setup ####
 library(haven)
 library(tidyverse)
-setwd("/Users/lillianhan/Documents/STA/STA304/PS3/ns20200625")
+setwd("/Users/tongwu/Desktop/STA304/PS3")
 # Read in the raw data (You might need to change this if you use a different dataset)
 raw_survey <- read_dta("ns20200625.dta")
 # Add the labels
